@@ -85,17 +85,17 @@ class ChatData:
 
 
 class Chat:
-    answer_threshold = 3            # answer 相关的阈值，值越小牛牛废话越多，越大话越少
+    answer_threshold = 2            # answer 相关的阈值，值越小牛牛废话越多，越大话越少
     answer_threshold_weights = [7, 23, 70]  # answer 阈值权重，不知道怎么解释，自己看源码吧（
     cross_group_threshold = 2       # N 个群有相同的回复，就跨群作为全局回复
-    repeat_threshold = 3            # 复读的阈值，群里连续多少次有相同的发言，就复读
-    speak_threshold = 5             # 主动发言的阈值，越小废话越多
+    repeat_threshold = 2            # 复读的阈值，群里连续多少次有相同的发言，就复读
+    speak_threshold = 2             # 主动发言的阈值，越小废话越多
 
     split_probability = 0.5         # 按逗号分割回复语的概率
     voice_probability = 0           # 回复语音的概率（仅纯文字）
-    speak_continuously_probability = 0.5  # 连续主动说话的概率
+    speak_continuously_probability = 0.6  # 连续主动说话的概率
     speak_poke_probability = 0.6    # 主动说话加上随机戳一戳群友的概率
-    speak_continuously_max_len = 2  # 连续主动说话最多几句话
+    speak_continuously_max_len = 3  # 连续主动说话最多几句话
 
     save_time_threshold = 3600      # 每隔多久进行一次持久化 ( 秒 )
     save_count_threshold = 1000     # 单个群超过多少条聊天记录就进行一次持久化。与时间是或的关系
@@ -172,9 +172,9 @@ class Chat:
         '''
         回复这句话，可能会分多次回复，也可能不回复
         '''
-        # 不回复太短的对话，大部分是“？”、“草”
-        if self.chat_data.is_plain_text and len(self.chat_data.plain_text) < 2:
-            return None
+        # # 不回复太短的对话，大部分是“？”、“草”
+        # if self.chat_data.is_plain_text and len(self.chat_data.plain_text) < 2:
+        #     return None
 
         # # 不要一直回复同一个内容
         # if self.chat_data.raw_message == latest_reply['pre_raw_message']:
@@ -183,6 +183,7 @@ class Chat:
         # if self.chat_data.raw_message == latest_reply['reply']:
         #    return None
 
+        #
         results = self._context_find()
         if not results:
             return None
@@ -231,7 +232,7 @@ class Chat:
         主动发言，返回当前最希望发言的 bot 账号、群号、发言消息 List，也有可能不发言
         '''
 
-        basic_msgs_len = 10
+        basic_msgs_len = 4     # Chat._reply_dict里最少的条数，少于这个条数Bot就不会主动发言
         basic_delay = 600
 
         def group_popularity_cmp(lhs: Tuple[int, List[Dict[str, Any]]],
@@ -455,10 +456,13 @@ class Chat:
     _blacklist_flag = 114514
 
     def _message_insert(self):
+        '''
+        更新_message_dict中的信息
+        '''
         group_id = self.chat_data.group_id
 
         with Chat._message_lock:
-            if group_id not in Chat._message_dict:
+            if group_id not in Chat._message_dict:      # key值查找
                 Chat._message_dict[group_id] = []
 
             Chat._message_dict[group_id].append({
@@ -506,7 +510,7 @@ class Chat:
     def _context_insert(self, pre_msg):
         if not pre_msg:
             return
-
+        # 当前的语句的raw_message
         raw_message = self.chat_data.raw_message
 
         # 在复读，不学
@@ -603,6 +607,10 @@ class Chat:
         keywords = self.chat_data.keywords
         bot_id = self.chat_data.bot_id
 
+        with open("E:/pallas_keyword.txt", "a+", encoding="utf8") as f:
+            f.write("raw_message:"+raw_message+"\n")
+            f.write("keywords:"+keywords+"\n")
+            f.close()
         # 复读！
         if group_id in Chat._message_dict:
             group_msgs = Chat._message_dict[group_id]
@@ -653,6 +661,8 @@ class Chat:
                 pre_answer['count'] += answer['count']
                 pre_answer['messages'] += answer['messages']
 
+        # 可在database-pallas_bot-content表中查看，搜索一个message对应的所有awnser，一个一个检查
+        # candidate_append就是加入消息发送待选名单的意思
         for answer in context['answers']:
 
             count = answer['count']
@@ -708,6 +718,7 @@ class Chat:
 
     @staticmethod
     def _text_to_speech(text: str) -> Optional[Message]:
+        # 文字转语音
         # if plugin_config.enable_voice:
         #     result = tts_client.synthesis(text, options={'per': 111})  # 度小萌
         #     if not isinstance(result, dict):  # error message
@@ -767,11 +778,11 @@ class Chat:
     @staticmethod
     def clearup_context() -> None:
         '''
-        清理所有超过 15 天没人说、且没有学会的话
+        清理所有超过 30 天没人说、且没有学会的话
         '''
 
         cur_time = int(time.time())
-        expiration = cur_time - 15 * 24 * 3600  # 15 天前
+        expiration = cur_time - 30 * 24 * 3600  # 30 天前
 
         context_mongo.delete_many({
             'time': {'$lt': expiration},

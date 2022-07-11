@@ -4,6 +4,7 @@
 
 ### Python ###
 # Byte-compiled / optimized / DLL files
+.idea/
 __pycache__/
 *.py[cod]
 *$py.class
@@ -109,6 +110,7 @@ celerybeat.pid
 *.sage.py
 
 # Environments
+.idea/
 .env
 .venv
 env/
@@ -143,3 +145,6 @@ dmypy.json
 resource/voices/*
 accounts
 cache
+
+#nlp_account
+nlp_account.txt

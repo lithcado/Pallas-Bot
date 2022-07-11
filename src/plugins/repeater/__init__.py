@@ -44,6 +44,13 @@ message_id_dict = {}
 @any_msg.handle()
 async def _(bot: Bot, event: GroupMessageEvent, state: T_State):
     to_learn = True
+
+    # if event.raw_message[0]=="牛":
+    #     await get_bot(str(344713992)).call_api('send_group_msg', **{
+    #         'message': "牛牛正在汪sir办公室听讲座",
+    #         'group_id': 719244062
+    #     })
+
     # 多账号登陆，且在同一群中时；避免一条消息被处理多次
     with message_id_lock:
         message_id = event.message_id

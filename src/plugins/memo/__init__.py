@@ -16,28 +16,36 @@ from nonebot.permission import Permission
 from nonebot.permission import SUPERUSER
 from src.common.config import BotConfig
 
-from .nlp import NlpChat
+from .memo import Memo
 
-nlp_chat_massage = on_message(
-    rule=startswith("牛牛"),
-    priority=16,
+
+memo_insert_massage = on_message(
+    rule=startswith("牛牛记录"),
+    priority=6,
     block=True,
     permission=permission.GROUP
 )
 
-@nlp_chat_massage.handle()
+@memo_insert_massage.handle()
 async def _(bot: Bot, event: GroupMessageEvent, state: T_State):
-    nlp_chat= NlpChat()
-    message_id = event.message_id
+    memo = Memo(event)
+    memo.insert_or_upgrade_data()
+
+memo_search_massage = on_message(
+    rule=startswith("牛牛查询"),
+    priority=6,
+    block=True,
+    permission=permission.GROUP
+)
+
+@memo_search_massage.handle()
+async def _(bot: Bot, event: GroupMessageEvent, state: T_State):
+    memo = Memo(event)
+    user_id = event.user_id
     group_id = event.group_id
     raw_message = event.raw_message
-    response = nlp_chat.get_response(raw_message[2:])
+    response = memo.search_data()
     await get_bot(str(344713992)).call_api('send_group_msg', **{
         'message': response,
         'group_id': group_id
     })
-    # if event.raw_message[0]=="牛":
-    #     await get_bot(str(344713992)).call_api('send_group_msg', **{
-    #         'message': "牛牛正在汪sir办公室听讲座",
-    #         'group_id': 719244062
-    #     })

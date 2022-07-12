@@ -49,3 +49,4 @@ async def _(bot: Bot, event: GroupMessageEvent, state: T_State):
         'message': response,
         'group_id': group_id
     })
+    

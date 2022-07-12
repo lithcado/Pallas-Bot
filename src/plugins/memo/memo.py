@@ -74,17 +74,19 @@ class Memo:
 
         [first_str, second_str] = raw_message.split(" ", 1)
         first_str = first_str[4:]
-
+        print(first_str)
+        print(second_str)
         keywords_list = jieba_fast.analyse.extract_tags(first_str, topK=2)
         if len(keywords_list) < 2:
-            keywords = self.chat_data.plain_text
+            keywords = first_str
         else:
             # keywords_list.sort()
             keywords = ' '.join(keywords_list)
 
+        # find_key = {'keywords': keywords}
+        # context = memo_mongo.find_one(find_key)
         update_value = {
                 '$set': {'message': second_str},
-                '$set': {'insert_user': user_id}
             }
         memo_mongo.update_one({'keywords': keywords},update_value,upsert=True)
 
@@ -94,7 +96,7 @@ class Memo:
         search_message = raw_message[4:]
         keywords_list = jieba_fast.analyse.extract_tags(search_message, topK=2)
         if len(keywords_list) < 2:
-            keywords = self.chat_data.plain_text
+            keywords = search_message
         else:
             # keywords_list.sort()
             keywords = ' '.join(keywords_list)
